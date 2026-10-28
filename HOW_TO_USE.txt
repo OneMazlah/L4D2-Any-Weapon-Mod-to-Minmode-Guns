@@ -1,0 +1,66 @@
+================================================================================
+           L4D2 MINMODE TOOLKIT - USER GUIDE & INSTRUCTIONS
+================================================================================
+
+This toolkit automatically transforms any Left 4 Dead 2 weapon skin (.vpk)
+from the Steam Workshop or external mod sites into a clean, competitive
+MinMode (lowered viewmodel) position in 5-10 seconds—without needing Blender!
+
+--------------------------------------------------------------------------------
+1. METHOD 1: CONVERT A SINGLE WEAPON (SINGLE VPK)
+--------------------------------------------------------------------------------
+1. Take any weapon skin .vpk file.
+2. Drag & Drop the .vpk file directly onto:
+   --> "Auto_MinMode.bat"
+3. The console will prompt for the Z offset value:
+   - Press ENTER to use the default (-0.04 m / subtle lowering).
+   - Or type a custom offset (e.g. -0.06 or -0.07 m) for a lower position.
+4. Done! Your new addon is created in:
+   --> "output_vpks\<mod_name>_minimode.vpk"
+5. Copy the file into:
+   "Left 4 Dead 2\left4dead2\addons\" and enable it in-game!
+
+--------------------------------------------------------------------------------
+2. METHOD 2: BATCH CONVERT MULTIPLE WEAPONS (SEPARATE VPKS)
+--------------------------------------------------------------------------------
+If you have multiple weapon VPKs and want to convert each into its own addon:
+1. Put all your weapon .vpk files into a single folder (e.g. "My_Weapons").
+2. Drag & Drop the FOLDER directly onto:
+   --> "Auto_MinMode.bat"
+3. The toolkit will detect all VPKs and display 2 modes:
+   - Choose [1] for Separate VPKs (Batch Convert).
+4. Press ENTER for the default Z offset (-0.04 m).
+5. The toolkit processes every weapon one by one automatically!
+   Output: Each weapon will be saved as a separate file inside "output_vpks\":
+   - weapon1_minimode.vpk
+   - weapon2_minimode.vpk
+   - weapon3_minimode.vpk ...
+
+--------------------------------------------------------------------------------
+3. METHOD 3: COMBINE MULTIPLE WEAPONS INTO ONE (MERGED PACK)
+--------------------------------------------------------------------------------
+If you want to combine multiple weapons into ONE single .vpk addon pack:
+1. Put all your weapon .vpk files into a single folder.
+2. Drag & Drop the FOLDER directly onto:
+   --> "Auto_MinMode.bat"
+3. Choose:
+   - Choose [2] for Merged Pack (Combine into 1 VPK).
+4. Type a name for your pack when prompted:
+   - e.g. "WW2 Weapon Pack" (or any title you prefer).
+5. Press ENTER for the default Z offset (-0.04 m).
+6. The toolkit merges all models, textures, sounds, and animations into
+   ONE unified .vpk file:
+   --> "output_vpks\WW2 Weapon Pack.vpk"
+   In-game, the addon title will match your custom pack name!
+
+--------------------------------------------------------------------------------
+IMPORTANT NOTES:
+- The toolkit NEVER overwrites files in your Left 4 Dead 2 folder directly.
+  All finished files are safely saved inside the "output_vpks" folder.
+- The output folder automatically opens in Windows Explorer once complete!
+
+--------------------------------------------------------------------------------
+CREDITS:
+  Developed by OneMazlah | AI Assistance by Google Gemini
+  Decompiler: Crowbar by ZeqMacaw | Compiler: NekoMDL by starfelll
+================================================================================

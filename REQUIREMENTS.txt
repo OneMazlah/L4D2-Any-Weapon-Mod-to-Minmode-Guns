@@ -1,0 +1,29 @@
+================================================================================
+                    L4D2 MINMODE TOOLKIT - REQUIREMENTS
+================================================================================
+
+1. OPERATING SYSTEM:
+   - Windows 10 / 11 (64-bit)
+
+2. PREREQUISITES:
+   a) Left 4 Dead 2 (Original / Steam)
+      - This tool uses 'studiomdl.exe' and 'vpk.exe' located in your
+        Left 4 Dead 2 game directory (typically at: Left 4 Dead 2\bin\).
+      - The tool automatically detects your Steam Left 4 Dead 2 installation.
+
+   b) Python 3 (Version 3.8 or higher)
+      - Free download from: https://www.python.org/downloads/
+      - IMPORTANT: During Python installation, make sure to check the box:
+        [x] "Add Python to PATH"
+
+3. INCLUDED / EMBEDDED UTILITIES:
+   - CrowbarCommandLineDecomp.exe is pre-packaged inside the 'bin' directory.
+     You do NOT need to download Crowbar separately.
+   - NekoMDL 64-bit compiler is pre-packaged inside the 'bin' directory for
+     high-poly model support.
+   - The Python 'vpk' package is automatically installed on the first run
+     via Auto_MinMode.bat if not already present.
+
+================================================================================
+          Developed by OneMazlah | AI Assistance by Google Gemini
+================================================================================

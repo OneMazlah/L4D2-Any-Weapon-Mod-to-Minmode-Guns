@@ -1,0 +1,23 @@
+# Local machine configuration
+l4d2_path.txt
+
+# Generated addon packages
+output_vpks/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test and packaging artifacts
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+# Editor and Windows metadata
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
