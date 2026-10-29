@@ -177,7 +177,7 @@ def find_viewmodels(extracted_dir):
 
     if not candidates:
         raise FileNotFoundError("No viewmodel file (v_*.mdl) found in VPK.")
-    return candidates
+    return sorted(candidates, key=lambda path: path.lower())
 
 
 def find_viewmodel(extracted_dir):
@@ -733,10 +733,13 @@ def patch_vvd_vtx_checksum(orig_vvd_path, orig_vtx_path, target_vvd_path, target
 # WEAPON PROCESSING PIPELINE
 # ==============================================================================
 
-def process_weapon_tree(extracted_dir, mod_name, l4d2_root, target_package_dir, offset_z_meters, work_dir):
-    """Process one extracted weapon tree and place its assets into a package directory."""
+def process_weapon_tree(
+    extracted_dir, mod_name, l4d2_root, target_package_dir, offset_z_meters,
+    work_dir, viewmodel_mdl=None, produced_targets=None,
+):
+    """Process one viewmodel from an extracted weapon tree into a package directory."""
     decompiled_dir = os.path.join(work_dir, "decompiled")
-    viewmodel_mdl = find_viewmodel(extracted_dir)
+    viewmodel_mdl = viewmodel_mdl or find_viewmodel(extracted_dir)
     decompile_model(viewmodel_mdl, decompiled_dir)
     qc_file = check_and_merge_animations(decompiled_dir, extracted_dir, work_dir)
 
@@ -803,6 +806,14 @@ def process_weapon_tree(extracted_dir, mod_name, l4d2_root, target_package_dir, 
     vtx_dst = None
 
     for src_file, rel_target in compiled_pairs:
+        normalized_target = os.path.normcase(os.path.normpath(rel_target))
+        if produced_targets is not None:
+            if normalized_target in produced_targets:
+                raise RuntimeError(
+                    f"Output path collision while processing {mod_name}: {rel_target}. "
+                    "The VPK contains multiple models that compile to the same file."
+                )
+            produced_targets.add(normalized_target)
         dst = os.path.join(target_package_dir, rel_target)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy2(src_file, dst)
@@ -836,15 +847,26 @@ def process_weapon_tree(extracted_dir, mod_name, l4d2_root, target_package_dir, 
 
 
 def process_single_weapon_vpk(vpk_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
-    """Extract and process one VPK weapon."""
+    """Extract and process every weapon viewmodel contained in one VPK."""
     mod_name = Path(vpk_path).stem
     work_dir = os.path.join(temp_root, mod_name)
     extracted_dir = os.path.join(work_dir, "extracted")
     extract_vpk(vpk_path, extracted_dir)
-    process_weapon_tree(
-        extracted_dir, mod_name, l4d2_root, target_package_dir,
-        offset_z_meters, work_dir,
-    )
+    viewmodels = find_viewmodels(extracted_dir)
+    produced_targets = set()
+
+    if len(viewmodels) > 1:
+        print(f"      [{mod_name}] Found {len(viewmodels)} viewmodels in this VPK.")
+
+    for index, viewmodel_mdl in enumerate(viewmodels, 1):
+        model_name = Path(viewmodel_mdl).stem
+        model_work_dir = os.path.join(work_dir, "models", f"{index:02d}_{model_name}")
+        print(f"      [{mod_name}] Model {index}/{len(viewmodels)}: {model_name}")
+        process_weapon_tree(
+            extracted_dir, f"{mod_name}/{model_name}", l4d2_root,
+            target_package_dir, offset_z_meters, model_work_dir,
+            viewmodel_mdl=viewmodel_mdl, produced_targets=produced_targets,
+        )
 
 
 def process_single_weapon_folder(folder_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
