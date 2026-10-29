@@ -37,6 +37,9 @@ A lightning-fast, standalone utility that transforms **any** Left 4 Dead 2 weapo
 3. Press **Enter** to accept the default lowering offset (`-0.04 m`), or type your preferred value (e.g. `-0.06`).
 4. Your new MinMode addon is instantly generated inside **`output_vpks/`**!
 
+### Extracted Single-Weapon Folder
+You may also drag an already-extracted weapon addon folder onto `Auto_MinMode.bat`; repacking it to a `.vpk` first is not required. The selected folder must contain exactly one viewmodel such as `models/v_models/v_shotgun_spas.mdl` together with its `.vvd` and `.vtx` files. Folders containing multiple `v_*.mdl` files are not supported by this input mode.
+
 ### 2. Batch Conversion (Separate VPKs)
 1. Place multiple weapon `.vpk` files inside a folder (e.g., `MyWeapons`).
 2. **Drag & Drop the folder** onto **`Auto_MinMode.bat`**.

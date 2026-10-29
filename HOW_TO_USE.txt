@@ -20,6 +20,13 @@ MinMode (lowered viewmodel) position in 5-10 seconds—without needing Blender!
 5. Copy the file into:
    "Left 4 Dead 2\left4dead2\addons\" and enable it in-game!
 
+EXTRACTED WEAPON FOLDER (NO VPK REQUIRED)
+Drag an extracted single-weapon addon folder directly onto Auto_MinMode.bat.
+It must contain exactly one viewmodel, for example:
+   models\v_models\v_shotgun_spas.mdl
+Keep its matching .vvd and .vtx files in the same folder. A folder containing
+multiple v_*.mdl files is not supported by this input mode.
+
 --------------------------------------------------------------------------------
 2. METHOD 2: BATCH CONVERT MULTIPLE WEAPONS (SEPARATE VPKS)
 --------------------------------------------------------------------------------

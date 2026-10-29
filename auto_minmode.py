@@ -159,8 +159,8 @@ def extract_vpk(vpk_path, output_dir):
     return count
 
 
-def find_viewmodel(extracted_dir):
-    """Find the main weapon viewmodel MDL file."""
+def find_viewmodels(extracted_dir):
+    """Find weapon viewmodel MDL files in an extracted addon tree."""
     v_models_dir = os.path.join(extracted_dir, "models", "v_models")
     if os.path.isdir(v_models_dir):
         mdls = glob.glob(os.path.join(v_models_dir, "v_*.mdl"))
@@ -177,7 +177,22 @@ def find_viewmodel(extracted_dir):
 
     if not candidates:
         raise FileNotFoundError("No viewmodel file (v_*.mdl) found in VPK.")
-    return candidates[0]
+    return candidates
+
+
+def find_viewmodel(extracted_dir):
+    """Find the main weapon viewmodel MDL file."""
+    return find_viewmodels(extracted_dir)[0]
+
+
+def is_extracted_single_weapon_folder(path):
+    """Return True when path is an extracted addon containing exactly one viewmodel."""
+    if not os.path.isdir(path):
+        return False
+    try:
+        return len(find_viewmodels(path)) == 1
+    except FileNotFoundError:
+        return False
 
 
 def decompile_model(mdl_path, out_dir):
@@ -718,17 +733,12 @@ def patch_vvd_vtx_checksum(orig_vvd_path, orig_vtx_path, target_vvd_path, target
 # WEAPON PROCESSING PIPELINE
 # ==============================================================================
 
-def process_single_weapon_tree(vpk_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
-    """Process one VPK weapon and place its assets into target_package_dir."""
-    mod_name = Path(vpk_path).stem
-    vpk_temp = os.path.join(temp_root, mod_name)
-    extracted_dir = os.path.join(vpk_temp, "extracted")
-    decompiled_dir = os.path.join(vpk_temp, "decompiled")
-
-    extract_vpk(vpk_path, extracted_dir)
+def process_weapon_tree(extracted_dir, mod_name, l4d2_root, target_package_dir, offset_z_meters, work_dir):
+    """Process one extracted weapon tree and place its assets into a package directory."""
+    decompiled_dir = os.path.join(work_dir, "decompiled")
     viewmodel_mdl = find_viewmodel(extracted_dir)
     decompile_model(viewmodel_mdl, decompiled_dir)
-    qc_file = check_and_merge_animations(decompiled_dir, extracted_dir, vpk_temp)
+    qc_file = check_and_merge_animations(decompiled_dir, extracted_dir, work_dir)
 
     # Fix Crowbar rotation bugs on delta corrective animation SMDs (_corrective_animation.smd)
     fixed_corr = fix_crowbar_corrective_animations(decompiled_dir)
@@ -825,6 +835,28 @@ def process_single_weapon_tree(vpk_path, l4d2_root, target_package_dir, offset_z
             pass
 
 
+def process_single_weapon_vpk(vpk_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
+    """Extract and process one VPK weapon."""
+    mod_name = Path(vpk_path).stem
+    work_dir = os.path.join(temp_root, mod_name)
+    extracted_dir = os.path.join(work_dir, "extracted")
+    extract_vpk(vpk_path, extracted_dir)
+    process_weapon_tree(
+        extracted_dir, mod_name, l4d2_root, target_package_dir,
+        offset_z_meters, work_dir,
+    )
+
+
+def process_single_weapon_folder(folder_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
+    """Process an already-extracted addon folder containing one weapon viewmodel."""
+    mod_name = Path(folder_path).name
+    work_dir = os.path.join(temp_root, mod_name)
+    process_weapon_tree(
+        folder_path, mod_name, l4d2_root, target_package_dir,
+        offset_z_meters, work_dir,
+    )
+
+
 def build_vpk_package(package_dir, output_vpk_name, addon_title, l4d2_root):
     """Generate final VPK from package_dir using vpk.exe."""
     vpk_exe = os.path.join(l4d2_root, "bin", "vpk.exe")
@@ -865,13 +897,24 @@ addonContent_WeaponModel 1
 # PIPELINE EXECUTION: SINGLE, SEPARATE (BATCH), MERGED PACK
 # ==============================================================================
 
-def run_pipeline(vpk_files, mode, pack_name, offset_z, l4d2_root):
+def source_display_name(source):
+    return os.path.basename(source["path"])
+
+
+def process_source(source, l4d2_root, target_package_dir, offset_z, temp_root):
+    if source["kind"] == "vpk":
+        process_single_weapon_vpk(source["path"], l4d2_root, target_package_dir, offset_z, temp_root)
+    else:
+        process_single_weapon_folder(source["path"], l4d2_root, target_package_dir, offset_z, temp_root)
+
+
+def run_pipeline(sources, mode, pack_name, offset_z, l4d2_root):
     """Run conversion pipeline according to selected mode."""
-    total = len(vpk_files)
+    total = len(sources)
     mode_label = "MERGED PACK (Combined into 1 VPK)" if mode == "merged" else "SEPARATE VPKS (Batch Processing)"
     print("=" * 65)
     print(f"  OPERATION MODE: {mode_label}")
-    print(f"  Total Weapons : {total} VPK file(s)")
+    print(f"  Total Weapons : {total} source(s)")
     print(f"  MinMode Offset: {offset_z:.3f} m")
     print("=" * 65)
 
@@ -881,10 +924,9 @@ def run_pipeline(vpk_files, mode, pack_name, offset_z, l4d2_root):
             merged_package_dir = os.path.join(temp_root, "merged_package")
             os.makedirs(merged_package_dir, exist_ok=True)
 
-            for idx, vpk_path in enumerate(vpk_files, 1):
-                mod_name = Path(vpk_path).stem
-                print(f"\n[{idx}/{total}] Processing: {os.path.basename(vpk_path)} ...")
-                process_single_weapon_tree(vpk_path, l4d2_root, merged_package_dir, offset_z, temp_root)
+            for idx, source in enumerate(sources, 1):
+                print(f"\n[{idx}/{total}] Processing: {source_display_name(source)} ...")
+                process_source(source, l4d2_root, merged_package_dir, offset_z, temp_root)
 
             # Build single merged VPK
             output_name = f"{pack_name}.vpk" if not pack_name.lower().endswith(".vpk") else pack_name
@@ -892,13 +934,13 @@ def run_pipeline(vpk_files, mode, pack_name, offset_z, l4d2_root):
 
         else:
             # Each weapon gets its OWN package directory and VPK
-            for idx, vpk_path in enumerate(vpk_files, 1):
-                mod_name = Path(vpk_path).stem
-                print(f"\n[{idx}/{total}] Processing: {os.path.basename(vpk_path)} ...")
-                single_pkg = os.path.join(temp_root, f"pkg_{mod_name}")
+            for idx, source in enumerate(sources, 1):
+                mod_name = Path(source["path"]).stem if source["kind"] == "vpk" else Path(source["path"]).name
+                print(f"\n[{idx}/{total}] Processing: {source_display_name(source)} ...")
+                single_pkg = os.path.join(temp_root, f"pkg_{idx}_{mod_name}")
                 os.makedirs(single_pkg, exist_ok=True)
 
-                process_single_weapon_tree(vpk_path, l4d2_root, single_pkg, offset_z, temp_root)
+                process_source(source, l4d2_root, single_pkg, offset_z, temp_root)
                 output_name = f"{mod_name}_minimode.vpk"
                 build_vpk_package(single_pkg, output_name, f"{mod_name} (MinMode)", l4d2_root)
 
@@ -915,7 +957,7 @@ def run_pipeline(vpk_files, mode, pack_name, offset_z, l4d2_root):
 
 
 def pick_path_dialog():
-    """Open File or Folder dialog via PowerShell."""
+    """Open a VPK file dialog, then an extracted weapon folder dialog."""
     ps_cmd = """
 Add-Type -AssemblyName System.Windows.Forms
 $dialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -929,6 +971,22 @@ if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True, text=True)
         chosen = res.stdout.strip()
         if chosen and os.path.isfile(chosen):
+            return chosen
+    except Exception:
+        pass
+
+    folder_ps_cmd = """
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = 'Select a folder containing VPKs or one extracted weapon addon'
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $dialog.SelectedPath
+}
+"""
+    try:
+        res = subprocess.run(["powershell", "-NoProfile", "-Command", folder_ps_cmd], capture_output=True, text=True)
+        chosen = res.stdout.strip()
+        if chosen and os.path.isdir(chosen):
             return chosen
     except Exception:
         pass
@@ -971,12 +1029,12 @@ if __name__ == "__main__":
                 input_paths.append(cleaned)
     else:
         # Prompt or dialog
-        print("Please provide a .vpk file or a folder containing .vpk files.")
+        print("Please provide a .vpk file, a folder containing .vpk files, or one extracted weapon folder.")
         picked = pick_path_dialog()
         if picked:
             input_paths.append(picked)
         else:
-            raw = input("Path to VPK file or folder: ").strip()
+            raw = input("Path to VPK file, VPK folder, or extracted weapon folder: ").strip()
             cleaned = clean_input(raw)
             if cleaned:
                 input_paths.append(cleaned)
@@ -985,30 +1043,47 @@ if __name__ == "__main__":
         print("[ERROR] No file or folder selected. Exiting.")
         sys.exit(1)
 
-    # 3. Resolve all VPK files
-    vpk_files = []
+    # 3. Resolve VPK files and already-extracted single-weapon folders.
+    sources = []
     for p in input_paths:
         if os.path.isfile(p) and p.lower().endswith(".vpk"):
-            vpk_files.append(p)
+            sources.append({"kind": "vpk", "path": p})
         elif os.path.isdir(p):
             found = glob.glob(os.path.join(p, "*.vpk"))
-            vpk_files.extend(found)
+            if found:
+                sources.extend({"kind": "vpk", "path": f} for f in found)
+            elif is_extracted_single_weapon_folder(p):
+                sources.append({"kind": "folder", "path": p})
+            else:
+                try:
+                    viewmodel_count = len(find_viewmodels(p))
+                except FileNotFoundError:
+                    viewmodel_count = 0
+                if viewmodel_count > 1:
+                    print(f"[ERROR] Extracted folder has {viewmodel_count} viewmodels: {p}")
+                    print("        This input mode currently accepts exactly one v_*.mdl per folder.")
+                else:
+                    print(f"[ERROR] No VPK files or extracted weapon viewmodel found in: {p}")
 
     # Remove duplicates preserving order
     seen = set()
-    vpk_files = [x for x in vpk_files if not (x.lower() in seen or seen.add(x.lower()))]
+    sources = [
+        source for source in sources
+        if not (source["path"].lower() in seen or seen.add(source["path"].lower()))
+    ]
 
-    if not vpk_files:
-        print("[ERROR] No .vpk files found in the provided input.")
+    if not sources:
+        print("[ERROR] No supported VPK files or extracted weapon folders found in the provided input.")
         sys.exit(1)
 
     # 4. Mode Selection (if multiple VPKs)
     mode = "single"
     pack_name = ""
-    if len(vpk_files) > 1:
-        print(f"Found {len(vpk_files)} weapon VPK file(s):")
-        for idx, f in enumerate(vpk_files, 1):
-            print(f"  {idx}. {os.path.basename(f)}")
+    if len(sources) > 1:
+        print(f"Found {len(sources)} weapon source(s):")
+        for idx, source in enumerate(sources, 1):
+            source_type = "Extracted folder" if source["kind"] == "folder" else "VPK"
+            print(f"  {idx}. {source_display_name(source)} [{source_type}]")
         print("\n" + "-" * 55)
         print("SELECT PROCESSING MODE:")
         print("  [1] Separate VPKs (Batch Convert)")
@@ -1028,7 +1103,9 @@ if __name__ == "__main__":
             mode = "separate"
     else:
         mode = "single"
-        print(f"Selected VPK file: {os.path.basename(vpk_files[0])}")
+        source = sources[0]
+        source_type = "extracted weapon folder" if source["kind"] == "folder" else "VPK file"
+        print(f"Selected {source_type}: {source_display_name(source)}")
 
     # 5. Offset Z prompt
     print("\nDefault MinMode lowering offset is -0.04 m (subtle viewmodel lower).")
@@ -1045,7 +1122,7 @@ if __name__ == "__main__":
 
     # 6. Execute pipeline
     try:
-        run_pipeline(vpk_files, mode, pack_name, offset_z, l4d2_dir)
+        run_pipeline(sources, mode, pack_name, offset_z, l4d2_dir)
     except Exception as exc:
         print(f"\n[ERROR] Pipeline failed: {exc}")
         traceback.print_exc()
