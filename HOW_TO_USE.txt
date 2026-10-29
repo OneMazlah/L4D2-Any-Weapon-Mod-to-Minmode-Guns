@@ -32,6 +32,12 @@ contain one or many viewmodels, for example:
 Keep each model's matching .vvd and .vtx files in the same folder. All v_*.mdl
 files are converted into one output VPK.
 
+SUPPORTED CONTENT / NON-WEAPON MODS
+The toolkit only processes weapon viewmodels named v_*.mdl inside
+models\v_models\. It rejects v_arms_* and v_hands_* files, so character arm
+skins are not converted accidentally. Texture-only, sound-only, character,
+prop, map, and other non-weapon addons are not supported.
+
 --------------------------------------------------------------------------------
 2. METHOD 2: BATCH CONVERT MULTIPLE WEAPONS (SEPARATE VPKS)
 --------------------------------------------------------------------------------

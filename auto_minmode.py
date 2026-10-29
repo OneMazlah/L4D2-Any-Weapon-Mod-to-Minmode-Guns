@@ -160,23 +160,39 @@ def extract_vpk(vpk_path, output_dir):
 
 
 def find_viewmodels(extracted_dir):
-    """Find weapon viewmodel MDL files in an extracted addon tree."""
+    """Find supported weapon viewmodel MDL files in an extracted addon tree."""
     v_models_dir = os.path.join(extracted_dir, "models", "v_models")
     if os.path.isdir(v_models_dir):
         mdls = glob.glob(os.path.join(v_models_dir, "v_*.mdl"))
     else:
         mdls = glob.glob(os.path.join(extracted_dir, "**", "v_*.mdl"), recursive=True)
 
+    arm_models = []
     candidates = [
         m for m in mdls
-        if not (os.path.basename(m).lower().startswith("a_") or ".anims" in os.path.basename(m).lower())
+        if not (
+            os.path.basename(m).lower().startswith("a_")
+            or ".anims" in os.path.basename(m).lower()
+            or os.path.basename(m).lower().startswith("v_arms")
+            or os.path.basename(m).lower().startswith("v_hands")
+        )
+    ]
+    arm_models = [
+        m for m in mdls
+        if (
+            os.path.basename(m).lower().startswith("v_arms")
+            or os.path.basename(m).lower().startswith("v_hands")
+        )
     ]
     if not candidates:
-        all_mdls = glob.glob(os.path.join(extracted_dir, "**", "*.mdl"), recursive=True)
-        candidates = [m for m in all_mdls if not os.path.basename(m).lower().startswith("a_")]
-
-    if not candidates:
-        raise FileNotFoundError("No viewmodel file (v_*.mdl) found in VPK.")
+        if arm_models:
+            raise FileNotFoundError(
+                "No supported weapon viewmodel found. Detected arms/character model "
+                f"({os.path.basename(arm_models[0])}), which this toolkit does not process."
+            )
+        raise FileNotFoundError(
+            "No supported weapon viewmodel (models/v_models/v_*.mdl) found."
+        )
     return sorted(candidates, key=lambda path: path.lower())
 
 

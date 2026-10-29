@@ -42,6 +42,9 @@ Single VPK files may contain one or many weapon viewmodels. Every `v_*.mdl` in t
 ### Extracted Weapon Folder
 You may also drag an already-extracted weapon addon folder onto `Auto_MinMode.bat`; repacking it to a `.vpk` first is not required. The folder may contain one or many viewmodels in `models/v_models/`, for example `v_shotgun_spas.mdl` and `v_rifle_ak47.mdl`, together with their matching `.vvd` and `.vtx` files. Every viewmodel is converted and packed into one output VPK.
 
+### Supported Content
+This toolkit only processes weapon viewmodels named `v_*.mdl` under `models/v_models/`. It rejects `v_arms_*` and `v_hands_*` models, so survivor/character arm skins are not accidentally converted. Texture-only, sound-only, character, prop, map, and other non-weapon addons are not supported.
+
 ### 2. Batch Conversion (Separate VPKs)
 1. Place multiple weapon `.vpk` files inside a folder (e.g., `MyWeapons`).
 2. **Drag & Drop the folder** onto **`Auto_MinMode.bat`**.
