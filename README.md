@@ -39,8 +39,8 @@ A lightning-fast, standalone utility that transforms **any** Left 4 Dead 2 weapo
 
 Single VPK files may contain one or many weapon viewmodels. Every `v_*.mdl` in the VPK is converted independently and returned to the same output VPK. If two models compile to the same output path, the conversion stops with an error instead of overwriting either model.
 
-### Extracted Single-Weapon Folder
-You may also drag an already-extracted weapon addon folder onto `Auto_MinMode.bat`; repacking it to a `.vpk` first is not required. The selected folder must contain exactly one viewmodel such as `models/v_models/v_shotgun_spas.mdl` together with its `.vvd` and `.vtx` files. Folders containing multiple `v_*.mdl` files are not supported by this input mode.
+### Extracted Weapon Folder
+You may also drag an already-extracted weapon addon folder onto `Auto_MinMode.bat`; repacking it to a `.vpk` first is not required. The folder may contain one or many viewmodels in `models/v_models/`, for example `v_shotgun_spas.mdl` and `v_rifle_ak47.mdl`, together with their matching `.vvd` and `.vtx` files. Every viewmodel is converted and packed into one output VPK.
 
 ### 2. Batch Conversion (Separate VPKs)
 1. Place multiple weapon `.vpk` files inside a folder (e.g., `MyWeapons`).

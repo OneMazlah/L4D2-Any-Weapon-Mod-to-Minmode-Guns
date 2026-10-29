@@ -185,12 +185,12 @@ def find_viewmodel(extracted_dir):
     return find_viewmodels(extracted_dir)[0]
 
 
-def is_extracted_single_weapon_folder(path):
-    """Return True when path is an extracted addon containing exactly one viewmodel."""
+def is_extracted_weapon_folder(path):
+    """Return True when path is an extracted addon containing one or more viewmodels."""
     if not os.path.isdir(path):
         return False
     try:
-        return len(find_viewmodels(path)) == 1
+        return bool(find_viewmodels(path))
     except FileNotFoundError:
         return False
 
@@ -846,17 +846,15 @@ def process_weapon_tree(
             pass
 
 
-def process_single_weapon_vpk(vpk_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
-    """Extract and process every weapon viewmodel contained in one VPK."""
-    mod_name = Path(vpk_path).stem
-    work_dir = os.path.join(temp_root, mod_name)
-    extracted_dir = os.path.join(work_dir, "extracted")
-    extract_vpk(vpk_path, extracted_dir)
+def process_extracted_weapon_models(
+    extracted_dir, mod_name, l4d2_root, target_package_dir, offset_z_meters, work_dir,
+):
+    """Process every weapon viewmodel found in an extracted addon tree."""
     viewmodels = find_viewmodels(extracted_dir)
     produced_targets = set()
 
     if len(viewmodels) > 1:
-        print(f"      [{mod_name}] Found {len(viewmodels)} viewmodels in this VPK.")
+        print(f"      [{mod_name}] Found {len(viewmodels)} viewmodels.")
 
     for index, viewmodel_mdl in enumerate(viewmodels, 1):
         model_name = Path(viewmodel_mdl).stem
@@ -869,13 +867,23 @@ def process_single_weapon_vpk(vpk_path, l4d2_root, target_package_dir, offset_z_
         )
 
 
+def process_single_weapon_vpk(vpk_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
+    """Extract and process every weapon viewmodel contained in one VPK."""
+    mod_name = Path(vpk_path).stem
+    work_dir = os.path.join(temp_root, mod_name)
+    extracted_dir = os.path.join(work_dir, "extracted")
+    extract_vpk(vpk_path, extracted_dir)
+    process_extracted_weapon_models(
+        extracted_dir, mod_name, l4d2_root, target_package_dir, offset_z_meters, work_dir,
+    )
+
+
 def process_single_weapon_folder(folder_path, l4d2_root, target_package_dir, offset_z_meters, temp_root):
-    """Process an already-extracted addon folder containing one weapon viewmodel."""
+    """Process every weapon viewmodel in an already-extracted addon folder."""
     mod_name = Path(folder_path).name
     work_dir = os.path.join(temp_root, mod_name)
-    process_weapon_tree(
-        folder_path, mod_name, l4d2_root, target_package_dir,
-        offset_z_meters, work_dir,
+    process_extracted_weapon_models(
+        folder_path, mod_name, l4d2_root, target_package_dir, offset_z_meters, work_dir,
     )
 
 
@@ -1051,7 +1059,7 @@ if __name__ == "__main__":
                 input_paths.append(cleaned)
     else:
         # Prompt or dialog
-        print("Please provide a .vpk file, a folder containing .vpk files, or one extracted weapon folder.")
+        print("Please provide a .vpk file, a folder containing .vpk files, or an extracted weapon folder.")
         picked = pick_path_dialog()
         if picked:
             input_paths.append(picked)
@@ -1065,7 +1073,7 @@ if __name__ == "__main__":
         print("[ERROR] No file or folder selected. Exiting.")
         sys.exit(1)
 
-    # 3. Resolve VPK files and already-extracted single-weapon folders.
+    # 3. Resolve VPK files and already-extracted weapon folders.
     sources = []
     for p in input_paths:
         if os.path.isfile(p) and p.lower().endswith(".vpk"):
@@ -1074,18 +1082,10 @@ if __name__ == "__main__":
             found = glob.glob(os.path.join(p, "*.vpk"))
             if found:
                 sources.extend({"kind": "vpk", "path": f} for f in found)
-            elif is_extracted_single_weapon_folder(p):
+            elif is_extracted_weapon_folder(p):
                 sources.append({"kind": "folder", "path": p})
             else:
-                try:
-                    viewmodel_count = len(find_viewmodels(p))
-                except FileNotFoundError:
-                    viewmodel_count = 0
-                if viewmodel_count > 1:
-                    print(f"[ERROR] Extracted folder has {viewmodel_count} viewmodels: {p}")
-                    print("        This input mode currently accepts exactly one v_*.mdl per folder.")
-                else:
-                    print(f"[ERROR] No VPK files or extracted weapon viewmodel found in: {p}")
+                print(f"[ERROR] No VPK files or extracted weapon viewmodel found in: {p}")
 
     # Remove duplicates preserving order
     seen = set()
